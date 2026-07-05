@@ -1,0 +1,83 @@
+{
+  "overall_score": 62,
+  "summary": "OpenSpec validates, all task boxes are ticked, the persistence regression from the first review is fixed, and npm test/lint/build pass. The remaining problems are narrower: unshared WhatsApp/copy share actions do not fall back to the app origin as required, and the public page bypasses the chosen HTTP share resolver trade-off by importing the data helper directly.",
+  "openspec_artefacts": {
+    "proposal_ok": true,
+    "design_ok": true,
+    "tasks_all_ticked": true,
+    "spec_deltas_well_formed": true
+  },
+  "design_adherence": {
+    "public_api_matches": true,
+    "data_shapes_match": true,
+    "state_transitions_match": true,
+    "tradeoff_choice_respected": false
+  },
+  "tdd_evidence": {
+    "all_tasks_have_tests": false,
+    "tests_are_non_trivial": true,
+    "notes": "Tests are substantive and cover persistence reloads, but task 6.1 does not assert WhatsApp/copy fallback-to-origin behavior when shareUrl is absent."
+  },
+  "acceptance_criteria": [
+    {
+      "criterion": "Owners can enable an unlisted share URL for a saved critique.",
+      "met": true,
+      "evidence": "tests/public-share.test.tsx covers enabling a UUID-backed share token and stable re-enable behavior; src/lib/galleryShare.ts persists the updated token to the JSON-backed saved critique store."
+    },
+    {
+      "criterion": "Owners can revoke a shared critique URL.",
+      "met": true,
+      "evidence": "tests/public-share.test.tsx covers revoking to null and verifies lookup returns 404 after a simulated store reload."
+    },
+    {
+      "criterion": "Public token lookup exposes only opted-in critiques.",
+      "met": true,
+      "evidence": "src/lib/galleryShare.ts resolves exact non-null share_token values and returns only titulo, critica, imageUrl, and optional audioUrl."
+    },
+    {
+      "criterion": "Shared critiques render on a noindex read-only page.",
+      "met": true,
+      "evidence": "src/app/share/[token]/page.tsx exports robots noindex/nofollow metadata and renders CritiqueResultCard with readOnly."
+    },
+    {
+      "criterion": "Share actions use the public share URL when available.",
+      "met": true,
+      "evidence": "src/components/gallery/CritiqueResultCard.tsx threads shareUrl into WhatsApp, X, and copy helpers."
+    },
+    {
+      "criterion": "Unshared critique actions keep the existing app-origin fallback.",
+      "met": false,
+      "evidence": "src/components/gallery/CritiqueResultCard.tsx only applies origin fallback in buildTwitterUrl; buildWhatsAppUrl and buildCopyText drop the URL when shareUrl is absent."
+    }
+  ],
+  "tests": {
+    "ran": "npm test; npm run lint",
+    "passed": true,
+    "details": "npm test: 11/11 passing; npm run lint: 0 errors, 4 existing <img> warnings"
+  },
+  "build": {
+    "ran": "npm run build",
+    "passed": true
+  },
+  "archive_status": "skipped:fix needed",
+  "issues": [
+    {
+      "severity": "major",
+      "file": "src/components/gallery/CritiqueResultCard.tsx",
+      "line": 6,
+      "note": "Add the app-origin fallback to WhatsApp sharing when shareUrl is absent, matching the spec's fallback requirement."
+    },
+    {
+      "severity": "major",
+      "file": "src/components/gallery/CritiqueResultCard.tsx",
+      "line": 17,
+      "note": "Add the app-origin fallback to copied share text when shareUrl is absent, and cover it in tests."
+    },
+    {
+      "severity": "major",
+      "file": "src/app/share/[token]/page.tsx",
+      "line": 16,
+      "note": "Route the public page through GET /api/share/[token] or update the design before close; the current page imports resolveShareToken directly despite the chosen API-route trade-off."
+    }
+  ]
+}
